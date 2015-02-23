@@ -19,33 +19,25 @@
 
 package ch.bender.evacuate;
 
-import java.io.IOException;
-import java.util.Arrays;
+import static org.junit.Assert.*;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.junit.Test;
 
 /**
  * TODO Hey Heri, comment this type please !
  *
  * @author Heri
  */
-public class Evacuate
+public class RunnerCheckDirectoriesTest
 {
-    
-    /** logger for this class */
-    private Logger myLog = LogManager.getLogger( Evacuate.class );
-    
+
     /**
-     * main
-     * <p>
-     * @param args
-     * @throws IOException
+     * Test method for {@link ch.bender.evacuate.Runner#checkDirectories()}.
      */
-    public static void main( String[] args ) throws IOException
+    @Test
+    public void testCheckDirectories()
     {
-        DoSomething doSomething = new DoSomething();
-        doSomething.execute( Arrays.asList( "test123", "test2", "test31238" ) );
+        fail( "Not yet implemented" );
     }
 
 }
