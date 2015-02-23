@@ -20,7 +20,6 @@
 package ch.bender.evacuate;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -129,10 +128,17 @@ public class EvacuateMain
     /**
      * run
      * <p>
+     * @throws Exception 
      */
-    private void run()
+    private void run() throws Exception
     {
-        // TODO Auto-generated method stub
+        Runner runner = new Runner();
+        runner.setOrigDir( myOrigDir );
+        runner.setBackupDir( myBackupDir );
+        runner.setEvacuateDir( myEvacuateDir );
+        runner.setDryRun( myDryRun );
+        
+        runner.run();
         
     }
 

@@ -28,14 +28,11 @@ import org.junit.Test;
  *
  * @author Heri
  */
-public class RunnerCheckDirectoriesTest
+public class RunnerTest
 {
 
-    /**
-     * Test method for {@link ch.bender.evacuate.Runner#checkDirectories()}.
-     */
     @Test
-    public void testCheckDirectories()
+    public void test()
     {
         fail( "Not yet implemented" );
     }
