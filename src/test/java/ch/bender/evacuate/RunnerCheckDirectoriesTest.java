@@ -148,7 +148,26 @@ public class RunnerCheckDirectoriesTest
     @Test
     public void testCheckDirectories()
     {
-        fail( "Not yet implemented" );
+        myClassUnderTest.setOrigDir( Paths.get( ROOT_DIR.toString(), "orig" ).toString() );
+        myClassUnderTest.setBackupDir( Paths.get( ROOT_DIR.toString(), "backup" ).toString() );
+        myClassUnderTest.setEvacuateDir( Paths.get( ROOT_DIR.toString(), "evacuate" ).toString() );
+//        
+//        ROOT_DIR = Paths.get( TEST_SANDBOX_DIR_STR );
+//        Files.createDirectory( ROOT_DIR );
+//        
+//        Path orig = createNewFolder( ROOT_DIR, "orig" );
+//        Path origSub1 = createNewFolder( orig, "sub1" );
+//        Path origSub2 = createNewFolder( orig, "sub2" );
+//        
+//        Path file1 = createNewFile( orig, "file1.txt" );
+//        Path fileSub1 = createNewFile( origSub1, "fileSub1.txt" );
+//        Path fileSub2 = createNewFile( origSub2, "fileSub2.txt" );
+//
+//        Path backup = createNewFolder( ROOT_DIR, "backup" );
+//
+//        private String myOrigDirStr;
+//        private String myBackupDirStr;
+//        private String myEvacuateDirStr;
     }
 
     private static void deleteDirRecursive( Path aDir ) throws Exception
