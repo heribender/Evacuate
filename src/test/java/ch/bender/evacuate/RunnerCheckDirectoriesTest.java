@@ -46,21 +46,13 @@ public class RunnerCheckDirectoriesTest
     /** logger for this class */
     private static Logger myLog = LogManager.getLogger( RunnerCheckDirectoriesTest.class );
 
-    private static final String TEST_SANDBOX_DIR_STR = "testsandbox";
-
     @Tested
     Runner                      myClassUnderTest;
 
-    private static Path ROOT_DIR;
 
     /**
      * Executed at loading of this class (static inizalizer).
      * <p>
-     * NOTE: If this test runs by PowerMockRunner you might encounter class
-     * loading problems later since it seems that the classloader in this static
-     * initializer is not the same as later in test run.
-     * <p>
-     * 
      * @throws Throwable
      *         On any problem
      */
@@ -71,18 +63,17 @@ public class RunnerCheckDirectoriesTest
 
         try
         {
-            ROOT_DIR = Paths.get( TEST_SANDBOX_DIR_STR );
-            Files.createDirectory( ROOT_DIR );
+            Files.createDirectory( Testconstants.ROOT_DIR );
             
-            Path orig = createNewFolder( ROOT_DIR, "orig" );
-            Path origSub1 = createNewFolder( orig, "sub1" );
-            Path origSub2 = createNewFolder( orig, "sub2" );
+            Path orig = Testconstants.createNewFolder( Testconstants.ROOT_DIR, "orig" );
+            Path origSub1 = Testconstants.createNewFolder( orig, "sub1" );
+            Path origSub2 = Testconstants.createNewFolder( orig, "sub2" );
             
-            Path file1 = createNewFile( orig, "file1.txt" );
-            Path fileSub1 = createNewFile( origSub1, "fileSub1.txt" );
-            Path fileSub2 = createNewFile( origSub2, "fileSub2.txt" );
+            Path file1 = Testconstants.createNewFile( orig, "file1.txt" );
+            Path fileSub1 = Testconstants.createNewFile( origSub1, "fileSub1.txt" );
+            Path fileSub2 = Testconstants.createNewFile( origSub2, "fileSub2.txt" );
 
-            Path backup = createNewFolder( ROOT_DIR, "backup" );
+            Path backup = Testconstants.createNewFolder( Testconstants.ROOT_DIR, "backup" );
             FileUtils.copyDirectoryToDirectory( origSub1.toFile(), backup.toFile() );
             FileUtils.copyDirectoryToDirectory( origSub2.toFile(), backup.toFile() );
         }
@@ -109,7 +100,7 @@ public class RunnerCheckDirectoriesTest
         System.out.println( "doAfterClass() entering..." );
         try
         {
-            deleteDirRecursive( Paths.get( TEST_SANDBOX_DIR_STR ) );
+            Testconstants.deleteDirRecursive( Paths.get( Testconstants.TEST_SANDBOX_DIR_STR ) );
 
             System.out.println( "doAfterClass() leaving..." );
         }
@@ -148,9 +139,9 @@ public class RunnerCheckDirectoriesTest
     @Test
     public void testCheckDirectories()
     {
-        myClassUnderTest.setOrigDir( Paths.get( ROOT_DIR.toString(), "orig" ).toString() );
-        myClassUnderTest.setBackupDir( Paths.get( ROOT_DIR.toString(), "backup" ).toString() );
-        myClassUnderTest.setEvacuateDir( Paths.get( ROOT_DIR.toString(), "evacuate" ).toString() );
+        myClassUnderTest.setOrigDir( Paths.get( Testconstants.ROOT_DIR.toString(), "orig" ).toString() );
+        myClassUnderTest.setBackupDir( Paths.get( Testconstants.ROOT_DIR.toString(), "backup" ).toString() );
+        myClassUnderTest.setEvacuateDir( Paths.get( Testconstants.ROOT_DIR.toString(), "evacuate" ).toString() );
 //        
 //        ROOT_DIR = Paths.get( TEST_SANDBOX_DIR_STR );
 //        Files.createDirectory( ROOT_DIR );
@@ -168,62 +159,6 @@ public class RunnerCheckDirectoriesTest
 //        private String myOrigDirStr;
 //        private String myBackupDirStr;
 //        private String myEvacuateDirStr;
-    }
-
-    private static void deleteDirRecursive( Path aDir ) throws Exception
-    {
-        Files.walkFileTree( aDir, new SimpleFileVisitor<Path>()
-        {
-            @Override
-            public FileVisitResult visitFile( Path file,
-                                              BasicFileAttributes attrs )
-                throws IOException
-            {
-                Files.delete( file );
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult postVisitDirectory( Path dir, IOException exc )
-                throws IOException
-            {
-                Files.delete( dir );
-                return FileVisitResult.CONTINUE;
-            }
-
-        } );
-    }
-
-    /**
-     * createNewFile
-     * <p>
-     * @param aParent
-     * @param aNewFileName
-     * @return
-     * @throws IOException
-     */
-    private static Path createNewFile( Path aParent, String aNewFileName )
-        throws IOException
-    {
-        Path file1 = Paths.get( aParent.toString(), aNewFileName );
-        Files.createFile( file1 );
-        return file1;
-    }
-
-    /**
-     * createNewFolder
-     * <p>
-     * @param aParent
-     * @param aNewFolderStr
-     * @return
-     * @throws IOException
-     */
-    private static Path createNewFolder( Path aParent, String aNewFolderStr )
-        throws IOException
-    {
-        Path orig = Paths.get( aParent.toString(), aNewFolderStr );
-        Files.createDirectory( orig );
-        return orig;
     }
 
 }

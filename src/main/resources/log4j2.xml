@@ -31,7 +31,7 @@
 
         <RollingFile
             name="RollingFile"
-            fileName="${log-path}/SocialDataImporter.log"
+            fileName="${log-path}/Evacuate.log"
             append="true"
             filePattern="${log-path}/%d{yyyy-MM-dd}_Evacuate.log">
             <PatternLayout pattern="%d{HH:mm:ss.SSS} (%6r) %-5p [%-7t] %F:%L %x - %m%n" />

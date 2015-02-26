@@ -19,6 +19,7 @@
 
 package ch.bender.evacuate;
 
+import java.io.File;
 import java.io.IOException;
 
 import org.apache.logging.log4j.LogManager;
@@ -73,6 +74,9 @@ public class EvacuateMain
      */
     public void init()
     {
+        myDryRun = false;
+        myMove = false;
+        
         if ( myArgs.length < 3 )
         {
             usage();
@@ -81,7 +85,7 @@ public class EvacuateMain
         
         int index = 0;
         
-        for ( int i = 0; i < (myArgs.length - 3); i++ )
+        for ( int i = 0; i < myArgs.length; i++ )
         {
             String arg = myArgs[i];
             
@@ -115,12 +119,64 @@ public class EvacuateMain
         myEvacuateDir = myArgs[index];
         index++;
 
-        myLog.debug( "Command line parameters:"
+        myLog.debug( "Extracted command line parameters:"
                 + "\n    Original directory  : " + myOrigDir 
                 + "\n    Backup directory    : " + myBackupDir
                 + "\n    Evacuation directory: " + myEvacuateDir
                 + "\n    Dry-Run             : " + myDryRun
                 + "\n    Move                : " + myMove );
+        
+        File origDir = new File( myOrigDir );
+        if ( !origDir.exists() )
+        {
+            usage();
+            throw new IllegalArgumentException( "Original directory does not exist: " + myOrigDir );
+        }
+        
+        File backupDir = new File( myBackupDir );
+        if ( !backupDir.exists() )
+        {
+            usage();
+            throw new IllegalArgumentException( "Backup directory does not exist: " + myBackupDir );
+        }
+
+        File evacuateDir = new File( myEvacuateDir );
+        if ( !evacuateDir.exists() )
+        {
+            
+            if ( !evacuateDir.mkdirs() )
+            {
+                usage();
+                throw new IllegalArgumentException( "Evacuation directory cannot be created: " + myEvacuateDir );
+            }
+        }
+        
+        if ( !origDir.isDirectory() )
+        {
+            usage();
+            throw new IllegalArgumentException( "Evacuation directory is not a directory: " + myOrigDir );
+        }
+
+        if ( !backupDir.isDirectory() )
+        {
+            usage();
+            throw new IllegalArgumentException( "Evacuation directory is not a directory: " + myBackupDir );
+        }
+
+        if ( !evacuateDir.isDirectory() )
+        {
+            usage();
+            throw new IllegalArgumentException( "Evacuation directory is not a directory: " + myEvacuateDir );
+        }
+
+        if (    ( origDir.equals( backupDir )     )
+             || ( origDir.equals( evacuateDir )   ) 
+             || ( backupDir.equals( evacuateDir ) ) ) 
+        {
+            usage();
+            throw new IllegalArgumentException( "At least two of the given directories are equal." );
+        }
+        
     }
 
     /**
