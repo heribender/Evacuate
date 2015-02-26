@@ -40,6 +40,7 @@ public class Runner
     private Logger myLog = LogManager.getLogger( Runner.class );
     
     private boolean myDryRun;
+    private boolean myMove;
     private String myOrigDirStr;
     private String myBackupDirStr;
     private String myEvacuateDirStr;
@@ -118,6 +119,22 @@ public class Runner
         myDryRun = aDryRun;
     }
     
+    /**
+     * @return Returns the move.
+     */
+    public boolean isMove()
+    {
+        return myMove;
+    }
+
+    /**
+     * @param aMove The move to set.
+     */
+    public void setMove( boolean aMove )
+    {
+        myMove = aMove;
+    }
+
     /**
      * @return Returns the origDir.
      */

@@ -38,6 +38,7 @@ public class EvacuateMain
     private String[] myArgs;
     
     private boolean myDryRun;
+    private boolean myMove;
     private String myOrigDir;
     private String myBackupDir;
     private String myEvacuateDir;
@@ -70,23 +71,36 @@ public class EvacuateMain
      * init
      * <p>
      */
-    private void init()
+    public void init()
     {
-        if ( myArgs.length < 1 )
+        if ( myArgs.length < 3 )
         {
             usage();
             throw new IllegalArgumentException( "Too less parameters" );
         }
         
-        int needed = 3;
         int index = 0;
         
-        if ( "-d".equals( myArgs[0] ) || "--dry-run".equals( myArgs[0] ) )
+        for ( int i = 0; i < (myArgs.length - 3); i++ )
         {
-            myDryRun = true;
-            needed++;
-            index++;
+            String arg = myArgs[i];
+            
+            if ( "-d".equals( arg ) || "--dry-run".equals( arg ) )
+            {
+                myDryRun = true;
+                index++;
+                continue;
+            }
+            
+            if ( "-m".equals( arg ) || "--move".equals( arg ) )
+            {
+                myMove = true;
+                index++;
+                continue;
+            }
         }
+
+        int needed = index + 3;
         
         if ( myArgs.length < needed )
         {
@@ -105,7 +119,8 @@ public class EvacuateMain
                 + "\n    Original directory  : " + myOrigDir 
                 + "\n    Backup directory    : " + myBackupDir
                 + "\n    Evacuation directory: " + myEvacuateDir
-                + "\n    Dry-Run             : " + myDryRun );
+                + "\n    Dry-Run             : " + myDryRun
+                + "\n    Move                : " + myMove );
     }
 
     /**
@@ -114,12 +129,19 @@ public class EvacuateMain
      */
     private void usage()
     {
-        StringBuilder sb = new StringBuilder( "Usage:" );
-        sb.append( "\n    evacuate.bat [-d | --dry-run] OrigDir BackupDir EvacuateDir" );
-        sb.append( "\n        -d, --dry-run: no file operation is done, files to evacuate are listed on console" );
-        sb.append( "\n        OrigDir: original directory" );
-        sb.append( "\n        BackupDir: Backup directory" );
+        StringBuilder sb = new StringBuilder( "\n\nUsage:" );
+        sb.append( "\n" );
+        sb.append( "\n    evacuate.bat [options] OrigDir BackupDir EvacuateDir" );
+        sb.append( "\n" );
+        sb.append( "\n    where:" );
+        sb.append( "\n        OrigDir    : original directory" );
+        sb.append( "\n        BackupDir  : Backup directory" );
         sb.append( "\n        EvacuateDir: Evacuation directory" );
+        sb.append( "\n    Options:" );
+        sb.append( "\n        -d, --dry-run: no file operation is done, files to evacuate are listed on console" );
+        sb.append( "\n        -m, --move   : evacuated files are moved from backup to evacuate dir instead of copy" );
+        sb.append( "\n\n" );
+        
         
         myLog.info( sb.toString() );
         
@@ -137,6 +159,7 @@ public class EvacuateMain
         runner.setBackupDir( myBackupDir );
         runner.setEvacuateDir( myEvacuateDir );
         runner.setDryRun( myDryRun );
+        runner.setMove( myMove );
         
         runner.run();
         
