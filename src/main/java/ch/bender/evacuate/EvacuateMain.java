@@ -43,6 +43,9 @@ public class EvacuateMain
     private String myOrigDir;
     private String myBackupDir;
     private String myEvacuateDir;
+
+    private Runner myRunner = new Runner();
+
     
     /**
      * main
@@ -208,16 +211,15 @@ public class EvacuateMain
      * <p>
      * @throws Exception 
      */
-    private void run() throws Exception
+    public void run() throws Exception
     {
-        Runner runner = new Runner();
-        runner.setOrigDir( myOrigDir );
-        runner.setBackupDir( myBackupDir );
-        runner.setEvacuateDir( myEvacuateDir );
-        runner.setDryRun( myDryRun );
-        runner.setMove( myMove );
+        myRunner.setOrigDir( myOrigDir );
+        myRunner.setBackupDir( myBackupDir );
+        myRunner.setEvacuateDir( myEvacuateDir );
+        myRunner.setDryRun( myDryRun );
+        myRunner.setMove( myMove );
         
-        runner.run();
+        myRunner.run();
         
     }
 

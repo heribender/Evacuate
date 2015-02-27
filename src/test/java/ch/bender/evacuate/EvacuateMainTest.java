@@ -200,13 +200,30 @@ public class EvacuateMainTest
         myClassUnderTest.init();
     }
 
+    boolean myRunnerCalled;
+
+    
+    class RunnerMock extends Runner
+    {
+        /**
+         * @see ch.bender.evacuate.Runner#run()
+         */
+        @Override
+        public void run() throws Exception
+        {
+            myRunnerCalled = true;
+        }
+        
+    }
+    
     /**
      * Loops on all posibilities
      * <p>
      * Test method for {@link ch.bender.evacuate.EvacuateMain#init()}.
+     * @throws Exception 
      */
     @Test
-    public void testInitLoop() 
+    public void testInitLoop() throws Exception 
     {
         String[] zeroOptions = makeCmdLineArgs();
         String[] oneOptionsD = makeCmdLineArgs( "-d" );
@@ -246,7 +263,7 @@ public class EvacuateMainTest
     private void doLoopStep( String[] aOptions,
                              FSOBJECTS aOrig,
                              FSOBJECTS aBackup,
-                             FSOBJECTS aEvacuate )
+                             FSOBJECTS aEvacuate ) throws Exception
     {
         String[] args = new String[ aOptions.length + 3 ];
         
@@ -334,11 +351,19 @@ public class EvacuateMainTest
                 Assert.fail( "Exception expected" );
             }
             
-            Assert.assertEquals( "Move",     expectedMove,                       Deencapsulation.getField( myClassUnderTest, "myMove" ) );
-            Assert.assertEquals( "DryRun",   expectedDryRun,                     Deencapsulation.getField( myClassUnderTest, "myDryRun" ) );
-            Assert.assertEquals( "Orig",     aOrig.getFsObject().toString(),     Deencapsulation.getField( myClassUnderTest, "myOrigDir" ) );
-            Assert.assertEquals( "Backup",   aBackup.getFsObject().toString(),   Deencapsulation.getField( myClassUnderTest, "myBackupDir" ) );
-            Assert.assertEquals( "Evacuate", aEvacuate.getFsObject().toString(), Deencapsulation.getField( myClassUnderTest, "myEvacuateDir" ) );
+            Runner myRunner;
+            myRunner = new RunnerMock();
+            Deencapsulation.setField( myClassUnderTest, "myRunner", myRunner );
+            myRunnerCalled = false;
+
+            myClassUnderTest.run();
+            
+            Assert.assertTrue( myRunnerCalled );
+            Assert.assertEquals( "Move",     expectedMove,                       myRunner.isMove() );
+            Assert.assertEquals( "DryRun",   expectedDryRun,                     myRunner.isDryRun() );
+            Assert.assertEquals( "Orig",     aOrig.getFsObject().toString(),     myRunner.getOrigDir() );
+            Assert.assertEquals( "Backup",   aBackup.getFsObject().toString(),   myRunner.getBackupDir() );
+            Assert.assertEquals( "Evacuate", aEvacuate.getFsObject().toString(), myRunner.getEvacuateDir() );
         }
         catch ( IllegalArgumentException e )
         {
@@ -380,9 +405,9 @@ public class EvacuateMainTest
         
     }
     
-    
     private String[] makeCmdLineArgs( String...aStrings )
     {
         return aStrings;
     }
+    
 }
