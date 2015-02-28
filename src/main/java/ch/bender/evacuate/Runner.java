@@ -20,9 +20,12 @@
 package ch.bender.evacuate;
 
 import java.io.IOException;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -37,7 +40,9 @@ public class Runner
 {
     
     /** logger for this class */
-    private Logger myLog = LogManager.getLogger( Runner.class );
+    Logger myLog = LogManager.getLogger( Runner.class );
+    
+    private static final int MAX_TRASH_VERSIONS = 10;
     
     private boolean myDryRun;
     private boolean myMove;
@@ -47,7 +52,7 @@ public class Runner
     private Path myOrigDir;
     private Path myBackupDir;
     private Path myEvacuateDir;
-    
+
     /**
      * run
      * <p>
@@ -57,7 +62,91 @@ public class Runner
     {
         checkDirectories();
         
+        Files.walkFileTree( myBackupDir, new SimpleFileVisitor<Path>()
+        {
+            @Override
+            public FileVisitResult visitFile( Path file,
+                                              BasicFileAttributes attrs )
+                throws IOException
+            {
+                return Runner.this.visitFile( file, attrs );
+            }
+
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
+                throws IOException
+            {
+                return Runner.this.preVisitDirectory( dir, attrs );
+            }
+
+        } );
+    }
+
+    /**
+     * visitFile
+     * <p>
+     * @param aFile
+     * @param aAttrs
+     * @return
+     * @throws IOException
+     */
+    FileVisitResult visitFile( Path aFile, BasicFileAttributes aAttrs )
+        throws IOException
+    {
+        myLog.debug( "Visiting file "
+                     + aFile.toString() );
+        return FileVisitResult.CONTINUE;
+    }
+
+    /**
+     * preVisitDirectory
+     * <p>
+     * @param aDir
+     * @param aAttrs
+     * @return
+     * @throws IOException
+     */
+    FileVisitResult preVisitDirectory( Path aDir, BasicFileAttributes aAttrs )
+        throws IOException
+    {
+        if ( aDir.equals( myBackupDir ) )
+        {
+            myLog.debug( "Visiting the root backup. No checks are done here" );
+            return FileVisitResult.CONTINUE;
+        }
+
+        myLog.debug( "Visiting directory "
+                     + aDir.toString() );
+        Path subDirToBackupRoot = myBackupDir.relativize( aDir );
+        Path origPendant = myOrigDir.resolve( subDirToBackupRoot );
         
+        if ( Files.notExists( origPendant ) )
+        {
+            evacuateDir( aDir );
+            return FileVisitResult.SKIP_SUBTREE;
+        }
+
+        return FileVisitResult.CONTINUE;
+    }
+
+    /**
+     * evacuateDir
+     * <p>
+     * @param aDir
+     * @throws Exception 
+     */
+    private void evacuateDir( Path aDir ) throws IOException
+    {
+        Path subDirToBackupRoot = myBackupDir.relativize( aDir );
+        Path evacuateTarget = myEvacuateDir.resolve( subDirToBackupRoot );
+        
+        Helper.prepareTrashChain( evacuateTarget, MAX_TRASH_VERSIONS );
+        
+        if ( myMove )
+        {
+            
+        }
+        // TODO Auto-generated method stub
         
     }
 

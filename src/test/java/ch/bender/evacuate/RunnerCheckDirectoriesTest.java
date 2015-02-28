@@ -15,15 +15,9 @@
 
 package ch.bender.evacuate;
 
-import static org.junit.Assert.fail;
-
-import java.io.IOException;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 
 import mockit.Tested;
 
@@ -63,6 +57,11 @@ public class RunnerCheckDirectoriesTest
 
         try
         {
+            if ( Files.exists( Testconstants.ROOT_DIR ) )
+            {
+                Helper.deleteDirRecursive( Testconstants.ROOT_DIR );
+            }
+            
             Files.createDirectory( Testconstants.ROOT_DIR );
             
             Path orig = Testconstants.createNewFolder( Testconstants.ROOT_DIR, "orig" );
@@ -100,7 +99,11 @@ public class RunnerCheckDirectoriesTest
         System.out.println( "doAfterClass() entering..." );
         try
         {
-            Testconstants.deleteDirRecursive( Paths.get( Testconstants.TEST_SANDBOX_DIR_STR ) );
+            if ( Files.exists( Testconstants.ROOT_DIR ) )
+            {
+                Helper.deleteDirRecursive( Testconstants.ROOT_DIR );
+            }
+            
 
             System.out.println( "doAfterClass() leaving..." );
         }

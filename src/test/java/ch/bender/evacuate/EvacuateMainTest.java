@@ -110,6 +110,11 @@ public class EvacuateMainTest
         myLog.debug( "entering" );
         try
         {
+            if ( Files.exists( Testconstants.ROOT_DIR ) )
+            {
+                Helper.deleteDirRecursive( Testconstants.ROOT_DIR );
+            }
+            
             Files.createDirectory( Testconstants.ROOT_DIR );
             FSOBJECTS.DIR1.setFsObject( Testconstants.createNewFolder( Testconstants.ROOT_DIR, "existingDir1" ) );
             FSOBJECTS.DIR2.setFsObject( Testconstants.createNewFolder( Testconstants.ROOT_DIR, "existingDir2" ) );
@@ -141,7 +146,11 @@ public class EvacuateMainTest
 
         try
         {
-            Testconstants.deleteDirRecursive( Testconstants.ROOT_DIR );
+            if ( Files.exists( Testconstants.ROOT_DIR ) )
+            {
+                Helper.deleteDirRecursive( Testconstants.ROOT_DIR );
+            }
+            
             
             myLog.debug( "leaving..." );
         }
@@ -387,7 +396,7 @@ public class EvacuateMainTest
                         // productive code has probably created it. Delete it again for next test step
                         if ( aEvacuate.getFsObject().toFile().exists() )
                         {
-                            Testconstants.deleteDirRecursive( aEvacuate.getFsObject() );
+                            Helper.deleteDirRecursive( aEvacuate.getFsObject() );
                         }
                     }
                     catch ( Exception e )

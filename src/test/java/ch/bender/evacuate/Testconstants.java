@@ -20,12 +20,9 @@
 package ch.bender.evacuate;
 
 import java.io.IOException;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 
 /**
  * TODO Hey Heri, comment this type please !
@@ -37,30 +34,6 @@ public final class Testconstants
     public static final String TEST_SANDBOX_DIR_STR = "testsandbox";
     public static Path ROOT_DIR = Paths.get( TEST_SANDBOX_DIR_STR );
 
-
-    public static void deleteDirRecursive( Path aDir ) throws Exception
-    {
-        Files.walkFileTree( aDir, new SimpleFileVisitor<Path>()
-        {
-            @Override
-            public FileVisitResult visitFile( Path file,
-                                              BasicFileAttributes attrs )
-                throws IOException
-            {
-                Files.delete( file );
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult postVisitDirectory( Path dir, IOException exc )
-                throws IOException
-            {
-                Files.delete( dir );
-                return FileVisitResult.CONTINUE;
-            }
-
-        } );
-    }
 
     /**
      * createNewFile
