@@ -64,45 +64,6 @@ public final class Helper
             return;
         }
         
-//        if ( aDir.isAbsolute() && aDir.getRoot().equals( aDir ) )
-//        {
-//            myLog.debug( "Given path object is a root. On windows we cannot delete 'System Volume Information' folder!" );
-//            
-//            // -> iterate over the entries in root and skip "System Volume information"
-//            Arrays.asList( aDir.toFile().listFiles( 
-//                new FilenameFilter() 
-//                {
-//                    @Override
-//                    public boolean accept( File aDirectory, String aName )
-//                    {
-//                        return !"System Volume Information".equals( aName );
-//                    }
-//                } )
-//            ).forEach
-//                ( dir -> 
-//                    {
-//                        try
-//                        {
-//                            if ( dir.isDirectory() )
-//                            {
-//                                deleteDirRecursive( Paths.get( dir.getAbsolutePath() ) );
-//                            }
-//                            else
-//                            {
-//                                Files.delete( Paths.get( dir.getAbsolutePath() ) );
-//        
-//                            }
-//                        }
-//                        catch ( Exception e )
-//                        {
-//                            throw new IllegalArgumentException( "", e );
-//                        }
-//                    }
-//                );
-//            
-////            return;
-//        }
-        
         if ( !Files.isDirectory( aDir ) )
         {
             throw new IllegalArgumentException( "given aDir is not a directory" );

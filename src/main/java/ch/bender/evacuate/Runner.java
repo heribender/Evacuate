@@ -33,6 +33,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 
 import org.apache.commons.io.FileUtils;
@@ -74,12 +75,27 @@ public class Runner
     {
         checkDirectories();
         
-        myEvacuateCandidates = new HashMap<>();
+        myEvacuateCandidates = new TreeMap<>();
         myFailedChainPreparations = Collections.synchronizedMap( new HashMap<>() );
         myFutures = new HashSet<>();
         
         Files.walkFileTree( myBackupDir, new SimpleFileVisitor<Path>()
         {
+            /**
+             * @see java.nio.file.SimpleFileVisitor#visitFileFailed(java.lang.Object, java.io.IOException)
+             */
+            @Override
+            public FileVisitResult visitFileFailed( Path aFile, IOException aExc )
+                throws IOException
+            {
+                if ( "System Volume Information".equals( ( aFile.getFileName().toString() ) ) )
+                {
+                    return FileVisitResult.SKIP_SUBTREE;
+                }
+                
+                throw aExc;
+            }
+
             @Override
             public FileVisitResult visitFile( Path file,
                                               BasicFileAttributes attrs )
@@ -92,6 +108,11 @@ public class Runner
             public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
                 throws IOException
             {
+                if ( "System Volume Information".equals( ( dir.getFileName() ) ) )
+                {
+                    return FileVisitResult.SKIP_SUBTREE;
+                }
+                
                 return Runner.this.preVisitDirectory( dir, attrs );
             }
 
@@ -197,7 +218,7 @@ public class Runner
     FileVisitResult visitFile( Path aFile, BasicFileAttributes aAttrs )
         throws IOException
     {
-        myLog.debug( "Visiting file " + aFile.toString() );
+//        myLog.debug( "Visiting file " + aFile.toString() );
         return visit( aFile );
     }
 

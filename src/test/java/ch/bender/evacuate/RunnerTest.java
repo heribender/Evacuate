@@ -328,8 +328,6 @@ public class RunnerTest
                          + e );
         }
     }
-    
-
 
     /**
      * assertBackupChain
@@ -354,6 +352,42 @@ public class RunnerTest
         
     }
     
+    /**
+     * Tests 
+     * <p>
+     * 
+     * @throws Throwable on any problem
+     */
+    @Test
+    public void test() throws Throwable
+    {
+
+        myLog.debug( ">>>>>>>>>>>>>>>> starting" );
+
+        try
+        {
+            myClassUnderTest.setDryRun( true );
+            myClassUnderTest.setMove( false );
+//            myClassUnderTest.setOrigDir( "C:/Users" );
+//            myClassUnderTest.setBackupDir( "S:/Users" );
+//            myClassUnderTest.setEvacuateDir( "T:/c_" );
+
+            myClassUnderTest.setOrigDir( "F:/" );
+            myClassUnderTest.setBackupDir( "R:/" );
+            myClassUnderTest.setEvacuateDir( "T:/f_" );
+
+//            myClassUnderTest.run();
+            
+        }
+        finally
+        {
+            myLog.debug( ">>>>>>>>>>>>>>>> finished" );
+        }
+    }
+
+    
+
+
     
 
 
