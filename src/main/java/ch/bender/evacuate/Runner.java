@@ -20,13 +20,22 @@
 package ch.bender.evacuate;
 
 import java.io.IOException;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -52,6 +61,9 @@ public class Runner
     private Path myOrigDir;
     private Path myBackupDir;
     private Path myEvacuateDir;
+    private Map<Path,Path> myEvacuateCandidates;
+    private Map<Path,Throwable> myFailedChainPreparations;
+    private Collection<CompletableFuture<?>> myFutures;
 
     /**
      * run
@@ -61,6 +73,10 @@ public class Runner
     public void run() throws Exception
     {
         checkDirectories();
+        
+        myEvacuateCandidates = new HashMap<>();
+        myFailedChainPreparations = Collections.synchronizedMap( new HashMap<>() );
+        myFutures = new HashSet<>();
         
         Files.walkFileTree( myBackupDir, new SimpleFileVisitor<Path>()
         {
@@ -80,6 +96,94 @@ public class Runner
             }
 
         } );
+        
+        if ( myEvacuateCandidates.size() == 0 )
+        {
+            myLog.info( "No candidates for evacuation found" );
+        }
+        else
+        {
+            StringBuilder sb = new StringBuilder( "\nFound candidates for evacuation:" );
+            myEvacuateCandidates.keySet().forEach( p -> sb.append( "\n    " + p.toString() ) );
+            myLog.info( sb.toString() );
+        }
+        
+        if ( myDryRun )
+        {
+            myLog.debug( "DryRun flag is set. Doing nothing" );
+            return;
+        }
+
+        if ( myFutures.size() > 0 )
+        {
+            myLog.debug( "Waiting for all async tasks to complete" );
+            CompletableFuture.allOf( myFutures.toArray( new CompletableFuture[myFutures.size()] ) ).get();
+        }
+        
+        if ( myFailedChainPreparations.size() > 0 )
+        {
+            for ( Path path : myFailedChainPreparations.keySet() )
+            {
+                myLog.error( "exception occured", myFailedChainPreparations.get( path ) );
+            }
+
+            throw new Exception( "chain preparation failed. See above error messages" );
+        }
+
+        
+        for ( Path src : myEvacuateCandidates.keySet() )
+        {
+            Path dst = myEvacuateCandidates.get( src );
+            Path dstParent = dst.getParent();
+            
+            if ( Files.notExists( dstParent ) )
+            {
+                Files.createDirectories( dstParent );  // FUTURE: overtake file attributes from src
+            }
+            
+            if ( myMove )
+            {
+                try
+                {
+                    myLog.debug( "Moving file system object \"" + src.toString() + "\" to \"" + dst.toString() + "\"" );
+                    Files.move( src, dst, StandardCopyOption.ATOMIC_MOVE );
+                }
+                catch ( AtomicMoveNotSupportedException e )
+                {
+                    myLog.warn( "Atomic move not supported. Try copy and then delete" );
+                    
+                    if ( Files.isDirectory( src ) )
+                    {
+                        myLog.debug( "Copying folder \"" + src.toString() + "\" to \"" + dst.toString() + "\"" );
+                        FileUtils.copyDirectory( src.toFile(), dst.toFile() );
+                        myLog.debug( "Delete folder \"" + src.toString() + "\"" );
+                        FileUtils.deleteDirectory( src.toFile() );
+                    }
+                    else
+                    {
+                        myLog.debug( "Copy file \"" + src.toString() + "\" to \"" + dst.toString() + "\"" );
+                        FileUtils.copyFile( src.toFile(), dst.toFile() );
+                        myLog.debug( "Delete file \"" + src.toString() + "\"" );
+                        Files.delete( src );
+                    }
+                }
+                
+            }
+            else
+            {
+                if ( Files.isDirectory( src ) )
+                {
+                    myLog.debug( "Copying folder \"" + src.toString() + "\" to \"" + dst.toString() + "\"" );
+                    FileUtils.copyDirectory( src.toFile(), dst.toFile() );
+                }
+                else
+                {
+                    myLog.debug( "Copy file \"" + src.toString() + "\" to \"" + dst.toString() + "\"" );
+                    FileUtils.copyFile( src.toFile(), dst.toFile() );
+                }
+            }
+        }
+        
     }
 
     /**
@@ -93,9 +197,8 @@ public class Runner
     FileVisitResult visitFile( Path aFile, BasicFileAttributes aAttrs )
         throws IOException
     {
-        myLog.debug( "Visiting file "
-                     + aFile.toString() );
-        return FileVisitResult.CONTINUE;
+        myLog.debug( "Visiting file " + aFile.toString() );
+        return visit( aFile );
     }
 
     /**
@@ -111,19 +214,36 @@ public class Runner
     {
         if ( aDir.equals( myBackupDir ) )
         {
-            myLog.debug( "Visiting the root backup. No checks are done here" );
+            myLog.debug( "Visiting the backup root. This directory is never subject of evactuation" );
             return FileVisitResult.CONTINUE;
         }
 
-        myLog.debug( "Visiting directory "
-                     + aDir.toString() );
-        Path subDirToBackupRoot = myBackupDir.relativize( aDir );
+        myLog.debug( "Visiting directory " + aDir.toString() );
+        return visit( aDir );
+    }
+
+    /**
+     * visit
+     * <p>
+     * @param aPath
+     * @return
+     */
+    private FileVisitResult visit( Path aPath )
+    {
+        Path subDirToBackupRoot = myBackupDir.relativize( aPath );
         Path origPendant = myOrigDir.resolve( subDirToBackupRoot );
         
         if ( Files.notExists( origPendant ) )
         {
-            evacuateDir( aDir );
-            return FileVisitResult.SKIP_SUBTREE;
+            evacuate( aPath );
+            
+            if ( Files.isDirectory( aPath ) )
+            {
+                return FileVisitResult.SKIP_SUBTREE;
+            }
+            
+            // else is file:
+            return FileVisitResult.CONTINUE;
         }
 
         return FileVisitResult.CONTINUE;
@@ -135,18 +255,27 @@ public class Runner
      * @param aDir
      * @throws Exception 
      */
-    private void evacuateDir( Path aDir ) throws IOException
+    private void evacuate( Path aDir )
     {
         Path subDirToBackupRoot = myBackupDir.relativize( aDir );
         Path evacuateTarget = myEvacuateDir.resolve( subDirToBackupRoot );
         
-        Helper.prepareTrashChain( evacuateTarget, MAX_TRASH_VERSIONS );
+        myEvacuateCandidates.put( aDir, evacuateTarget );
         
-        if ( myMove )
+        if ( myDryRun )
         {
-            
+            return;
         }
-        // TODO Auto-generated method stub
+        
+        if ( Files.exists( evacuateTarget ) )
+        {
+            myLog.debug( "adding Future (trash chain preparation): " + evacuateTarget.toString() );
+            CompletableFuture<Void> future = CompletableFuture.runAsync( 
+                   () -> Helper.prepareTrashChain( evacuateTarget, 
+                                                   MAX_TRASH_VERSIONS,
+                                                   myFailedChainPreparations ) );
+            myFutures.add( future );
+        }
         
     }
 

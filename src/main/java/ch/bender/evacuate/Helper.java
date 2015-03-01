@@ -28,6 +28,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.text.DecimalFormat;
+import java.util.Map;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.logging.log4j.LogManager;
@@ -42,7 +43,7 @@ public final class Helper
 {
     
     /** logger for this class */
-    private static Logger myLog = LogManager.getLogger( Helper.class );
+    static Logger myLog = LogManager.getLogger( Helper.class );
 
     /**
      * Deletes a whole directory (recursively)
@@ -63,14 +64,83 @@ public final class Helper
             return;
         }
         
+//        if ( aDir.isAbsolute() && aDir.getRoot().equals( aDir ) )
+//        {
+//            myLog.debug( "Given path object is a root. On windows we cannot delete 'System Volume Information' folder!" );
+//            
+//            // -> iterate over the entries in root and skip "System Volume information"
+//            Arrays.asList( aDir.toFile().listFiles( 
+//                new FilenameFilter() 
+//                {
+//                    @Override
+//                    public boolean accept( File aDirectory, String aName )
+//                    {
+//                        return !"System Volume Information".equals( aName );
+//                    }
+//                } )
+//            ).forEach
+//                ( dir -> 
+//                    {
+//                        try
+//                        {
+//                            if ( dir.isDirectory() )
+//                            {
+//                                deleteDirRecursive( Paths.get( dir.getAbsolutePath() ) );
+//                            }
+//                            else
+//                            {
+//                                Files.delete( Paths.get( dir.getAbsolutePath() ) );
+//        
+//                            }
+//                        }
+//                        catch ( Exception e )
+//                        {
+//                            throw new IllegalArgumentException( "", e );
+//                        }
+//                    }
+//                );
+//            
+////            return;
+//        }
+        
         if ( !Files.isDirectory( aDir ) )
         {
             throw new IllegalArgumentException( "given aDir is not a directory" );
         }
         
-        
         Files.walkFileTree( aDir, new SimpleFileVisitor<Path>()
         {
+            /**
+             * @see java.nio.file.SimpleFileVisitor#visitFileFailed(java.lang.Object, java.io.IOException)
+             */
+            @Override
+            public FileVisitResult visitFileFailed( Path aFile, IOException aExc )
+                throws IOException
+            {
+                if ( "System Volume Information".equals( ( aFile.getFileName().toString() ) ) )
+                {
+                    return FileVisitResult.SKIP_SUBTREE;
+                }
+                
+                throw aExc;
+            }
+
+            /**
+             * @see java.nio.file.SimpleFileVisitor#preVisitDirectory(java.lang.Object, java.nio.file.attribute.BasicFileAttributes)
+             */
+            @Override
+            public FileVisitResult preVisitDirectory( Path aFile,
+                                                      BasicFileAttributes aAttrs )
+                throws IOException
+            {
+                if ( "System Volume Information".equals( ( aFile.getFileName() ) ) )
+                {
+                    return FileVisitResult.SKIP_SUBTREE;
+                }
+                
+                return FileVisitResult.CONTINUE;
+            }
+
             @Override
             public FileVisitResult visitFile( Path file,
                                               BasicFileAttributes attrs )
@@ -84,6 +154,12 @@ public final class Helper
             public FileVisitResult postVisitDirectory( Path dir, IOException exc )
                 throws IOException
             {
+                if ( dir.isAbsolute() && dir.getRoot().equals( dir ) )
+                {
+                    myLog.debug( "root cannot be deleted: " + dir.toString() );
+                    return FileVisitResult.CONTINUE;
+                }
+                
                 Files.delete( dir );
                 return FileVisitResult.CONTINUE;
             }
@@ -113,49 +189,60 @@ public final class Helper
      * 
      * @param aTarget
      * @param aMaxBackups
+     * @param aFailedPreparations 
      * @throws IOException
      */
-    public static void prepareTrashChain( Path aTarget, int aMaxBackups ) throws IOException
+    public static void prepareTrashChain( Path aTarget, int aMaxBackups, Map<Path,Throwable> aFailedPreparations )
     {
-        int i = aMaxBackups-1;
+        myLog.debug( "preparing trash chain for " + aTarget.toString() );
         
-        while ( i > 0 )
+        try
         {
-            Path targetUpper = appendNumberSuffix( aTarget, i );
-            Path targetLower = ( i > 1 ) ? appendNumberSuffix( aTarget, i-1 ) 
-                                         : aTarget;
-
-            i--;
-
-            if ( Files.notExists( targetUpper ) && Files.notExists( targetLower ) )
-            {
-                continue;
-            }
             
-            if ( Files.exists( targetUpper ) )
+            int i = aMaxBackups-1;
+            
+            while ( i > 0 )
             {
-                myLog.info( "There are already " + (i+2) + " trashed versions of " + aTarget.toString() + ". Deleting the oldest one" );
+                Path targetUpper = appendNumberSuffix( aTarget, i );
+                Path targetLower = ( i > 1 ) ? appendNumberSuffix( aTarget, i-1 ) 
+                                             : aTarget;
 
+                i--;
+
+                if ( Files.notExists( targetUpper ) && Files.notExists( targetLower ) )
+                {
+                    continue;
+                }
+                
                 if ( Files.exists( targetUpper ) )
                 {
-                    if ( Files.isDirectory( targetUpper ) )
+                    myLog.info( "There are already " + (i+2) + " trashed versions of " + aTarget.toString() + ". Deleting the oldest one" );
+
+                    if ( Files.exists( targetUpper ) )
                     {
-                        Helper.deleteDirRecursive( targetUpper );
-                    }
-                    else
-                    {
-                        Files.delete( targetUpper );
+                        if ( Files.isDirectory( targetUpper ) )
+                        {
+                            Helper.deleteDirRecursive( targetUpper );
+                        }
+                        else
+                        {
+                            Files.delete( targetUpper );
+                        }
                     }
                 }
-            }
-            
-            if ( Files.notExists( targetLower ) )
-            {
-                continue;
-            }
+                
+                if ( Files.notExists( targetLower ) )
+                {
+                    continue;
+                }
 
-            myLog.debug( "Renaming " + targetLower.toString() + " to " + targetUpper.toString() );
-            Files.move( targetLower, targetUpper, StandardCopyOption.ATOMIC_MOVE );
+                myLog.debug( "Renaming " + targetLower.toString() + " to " + targetUpper.toString() );
+                Files.move( targetLower, targetUpper, StandardCopyOption.ATOMIC_MOVE );
+            }
+        }
+        catch ( Throwable e )
+        {
+            aFailedPreparations.put( aTarget, e );
         }
     }
 
@@ -238,7 +325,7 @@ public final class Helper
      */
     private Helper()
     {
-        // TODO Auto-generated constructor stub
+        super();
     }
 
 }

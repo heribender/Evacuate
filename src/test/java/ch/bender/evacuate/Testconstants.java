@@ -24,6 +24,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import org.apache.commons.io.FileUtils;
+
 /**
  * TODO Hey Heri, comment this type please !
  *
@@ -36,18 +38,29 @@ public final class Testconstants
 
 
     /**
-     * createNewFile
+     * Creates a new file with given name in given parent directory.
      * <p>
+     * The path of the new file is written into the file.
+     * <p>
+     * 
      * @param aParent
+     *        must be an existing directory       
      * @param aNewFileName
-     * @return
+     *        the name of the new file
+     * @return the path object of the new file
      * @throws IOException
      */
     public static Path createNewFile( Path aParent, String aNewFileName )
         throws IOException
     {
+        if ( !Files.isDirectory( aParent ) )
+        {
+            throw new IllegalArgumentException( "Given parent is not a directory or does not exist" );
+        }
+        
         Path file1 = Paths.get( aParent.toString(), aNewFileName );
         Files.createFile( file1 );
+        FileUtils.writeStringToFile( file1.toFile(), file1.toString() + "\n" );
         return file1;
     }
 

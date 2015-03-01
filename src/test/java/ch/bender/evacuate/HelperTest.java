@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -47,6 +49,7 @@ public class HelperTest
     private Path myDir_02;
     private Path myFile01;
     private Path myFile02;
+    private Map<Path,Throwable> myFailedChainPreparations;
 
     /**
      * This method is executed just before each test method
@@ -75,6 +78,7 @@ public class HelperTest
             myFile01 = Testconstants.createNewFile( myBaseDir, "pre.file_01.txt" );
             myFile02 = Testconstants.createNewFile( myBaseDir, "pre.file_02.txt" );
 
+            myFailedChainPreparations = new HashMap<>();
             
             
         }
@@ -118,11 +122,21 @@ public class HelperTest
      * @throws IOException 
      */
     @Test
-    public void testPrepareTrashChainDirectory10() throws IOException
+    public void testPrepareTrashChainDirectory10()
     {
         myLog.debug( "trash chaning directory (10): " + myBaseDir.toString() );
-        Helper.prepareTrashChain( myBaseDir, 10 );
+        Helper.prepareTrashChain( myBaseDir, 10, myFailedChainPreparations );
         
+        if ( myFailedChainPreparations.size() > 0 )
+        {
+            for ( Path path : myFailedChainPreparations.keySet() )
+            {
+                myLog.error( "exception occured", myFailedChainPreparations.get( path ) );
+            }
+            
+            Assert.fail();
+        }
+
         Assert.assertTrue( "baseDir file not move to baseDir_01", Files.notExists( myBaseDir ) );
         Assert.assertTrue( Files.exists( myDir_01 ) );
         Assert.assertTrue( Files.exists( Paths.get( myDir_01.toString(), myBaseFile.getFileName().toString() ) ) );
@@ -136,12 +150,22 @@ public class HelperTest
      * @throws IOException 
      */
     @Test
-    public void testPrepareTrashChainFiles10() throws IOException
+    public void testPrepareTrashChainFiles10()
     {
         myLog.debug( "trash chaning files (10): " + myBaseDir.toString() );
-        Helper.prepareTrashChain( myBaseFile, 10 );
+        Helper.prepareTrashChain( myBaseFile, 10, myFailedChainPreparations );
         
-        Assert.assertTrue( "base file not movee to basefile_01", Files.notExists( myBaseFile ) );
+        if ( myFailedChainPreparations.size() > 0 )
+        {
+            for ( Path path : myFailedChainPreparations.keySet() )
+            {
+                myLog.error( "exception occured", myFailedChainPreparations.get( path ) );
+            }
+            
+            Assert.fail();
+        }
+
+        Assert.assertTrue( "base file not moved to basefile_01", Files.notExists( myBaseFile ) );
         Assert.assertTrue( Files.exists( myFile01 ) );
         Assert.assertTrue( Files.exists( myFile02 ) );
         Path file3 = Helper.appendNumberSuffix( myBaseFile, 3, true );
@@ -153,11 +177,21 @@ public class HelperTest
      * @throws IOException 
      */
     @Test
-    public void testPrepareTrashChainDirectory3() throws IOException
+    public void testPrepareTrashChainDirectory3()
     {
         myLog.debug( "trash chaning directory (3): " + myBaseDir.toString() );
-        Helper.prepareTrashChain( myBaseDir, 3 );
+        Helper.prepareTrashChain( myBaseDir, 3, myFailedChainPreparations );
         
+        if ( myFailedChainPreparations.size() > 0 )
+        {
+            for ( Path path : myFailedChainPreparations.keySet() )
+            {
+                myLog.error( "exception occured", myFailedChainPreparations.get( path ) );
+            }
+            
+            Assert.fail();
+        }
+
         Assert.assertTrue( "baseDir file not move to baseDir_01", Files.notExists( myBaseDir ) );
         Assert.assertTrue( Files.exists( myDir_01 ) );
         Assert.assertTrue( Files.exists( Paths.get( myDir_01.toString(), myBaseFile.getFileName().toString() ) ) );
@@ -171,11 +205,21 @@ public class HelperTest
      * @throws IOException 
      */
     @Test
-    public void testPrepareTrashChainFiles3() throws IOException
+    public void testPrepareTrashChainFiles3()
     {
         myLog.debug( "trash chaning files (3): " + myBaseDir.toString() );
-        Helper.prepareTrashChain( myBaseFile, 3 );
+        Helper.prepareTrashChain( myBaseFile, 3, myFailedChainPreparations );
         
+        if ( myFailedChainPreparations.size() > 0 )
+        {
+            for ( Path path : myFailedChainPreparations.keySet() )
+            {
+                myLog.error( "exception occured", myFailedChainPreparations.get( path ) );
+            }
+            
+            Assert.fail();
+        }
+
         Assert.assertTrue( "base file not movee to basefile_01", Files.notExists( myBaseFile ) );
         Assert.assertTrue( Files.exists( myFile01 ) );
         Assert.assertTrue( Files.exists( myFile02 ) );
@@ -220,5 +264,31 @@ public class HelperTest
         myLog.debug( "received: " + received.toString() );
         Assert.assertEquals( "filename_01", received.toString() );
     }
+
+    /**
+     * Tests 
+     * <p>
+     * 
+     * @throws Throwable on any problem
+     */
+    @Test
+    public void test() throws Throwable
+    {
+
+//        myLog.debug( ">>>>>>>>>>>>>>>> starting" );
+//
+//        try
+//        {
+//            Path path = Paths.get( "T:/" );
+//            Helper.deleteDirRecursive( path );
+//        }
+//        finally
+//        {
+//            myLog.debug( ">>>>>>>>>>>>>>>> finished" );
+//        }
+    }
+
+    
+
 
 }

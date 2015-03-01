@@ -21,6 +21,7 @@ package ch.bender.evacuate;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import mockit.Injectable;
 import mockit.Tested;
@@ -29,6 +30,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -56,6 +58,25 @@ public class RunnerTest
     private String myBackupDirStr;
     @Injectable
     private String myEvacuateDirStr;
+
+    private Path myOrigFile1;
+
+    private Path myOrigFileSub1;
+    private Path myOrigFileSub12;
+
+    private Path myOrigFileSub2;
+    private Path myOrigFileSub2Sub1;
+
+    private Path myOrigDir;
+
+    private Path myOrigDirSub1;
+
+    private Path myOrigDirSub2;
+    private Path myOrigDirSub2Sub1;
+
+    private Path myBackupDir;
+
+    private Path myEvacuateDir;
     
 
     /**
@@ -75,27 +96,55 @@ public class RunnerTest
                 Helper.deleteDirRecursive( Testconstants.ROOT_DIR );
             }
             
+            /*
+             * Preparing the test sandbox in current directory:
+             * 
+             * testsandbox
+             *   +- orig
+             *      +- sub1
+             *         +- fileSub12.txt
+             *   +- backup
+             *      +- sub1
+             *         +- fileSub1.txt
+             *         +- fileSub12.txt
+             *      +- sub2
+             *         +- sub2sub1
+             *            +- fileSub2Sub1.txt
+             *         +- fileSub2.txt
+             *      +- file1.txt
+             *   +- evacuate
+             *       <empty>
+             */
             Files.createDirectory( Testconstants.ROOT_DIR );
             
-            Path orig = Testconstants.createNewFolder( Testconstants.ROOT_DIR, "orig" );
-            Path origSub1 = Testconstants.createNewFolder( orig, "sub1" );
-            Path origSub2 = Testconstants.createNewFolder( orig, "sub2" );
+            myOrigDir = Testconstants.createNewFolder( Testconstants.ROOT_DIR, "orig" );
+            myOrigDirSub1 = Testconstants.createNewFolder( myOrigDir, "sub1" );
+            myOrigDirSub2 = Testconstants.createNewFolder( myOrigDir, "sub2" );
+            myOrigDirSub2Sub1 = Testconstants.createNewFolder( myOrigDirSub2, "sub2sub1" );
             
-            Path file1 = Testconstants.createNewFile( orig, "file1.txt" );
-            Path fileSub1 = Testconstants.createNewFile( origSub1, "fileSub1.txt" );
-            Path fileSub2 = Testconstants.createNewFile( origSub2, "fileSub2.txt" );
+            myOrigFile1 = Testconstants.createNewFile( myOrigDir, "file1.txt" );
+            myOrigFileSub1 = Testconstants.createNewFile( myOrigDirSub1, "fileSub1.txt" );
+            myOrigFileSub12 = Testconstants.createNewFile( myOrigDirSub1, "fileSub12.txt" );
+            myOrigFileSub2 = Testconstants.createNewFile( myOrigDirSub2, "fileSub2.txt" );
+            myOrigFileSub2Sub1 = Testconstants.createNewFile( myOrigDirSub2Sub1, "fileSub2Sub1.txt" );
+            
+            myBackupDir = Testconstants.createNewFolder( Testconstants.ROOT_DIR, "backup" );
+            FileUtils.copyFileToDirectory( myOrigFile1.toFile(), myBackupDir.toFile() );
+            FileUtils.copyDirectoryToDirectory( myOrigDirSub1.toFile(), myBackupDir.toFile() );
+            FileUtils.copyDirectoryToDirectory( myOrigDirSub2.toFile(), myBackupDir.toFile() );
+            
+            myEvacuateDir = Testconstants.createNewFolder( Testconstants.ROOT_DIR, "evacuate" );
 
-            Path backup = Testconstants.createNewFolder( Testconstants.ROOT_DIR, "backup" );
-            FileUtils.copyDirectoryToDirectory( origSub1.toFile(), backup.toFile() );
-            FileUtils.copyDirectoryToDirectory( origSub2.toFile(), backup.toFile() );
-            
-            Path evacuate = Testconstants.createNewFolder( Testconstants.ROOT_DIR, "evacuate" );
+            // delete some objects from orig dir:
+            Helper.deleteDirRecursive( myOrigDirSub2 );
+            Files.delete( myOrigFile1 );
+            Files.delete( myOrigFileSub1 );
             
             myDryRun = false;
             myMove = false;
-            myOrigDirStr = orig.toString();
-            myBackupDirStr = backup.toString();
-            myEvacuateDirStr = evacuate.toString();
+            myOrigDirStr = myOrigDir.toString();
+            myBackupDirStr = myBackupDir.toString();
+            myEvacuateDirStr = myEvacuateDir.toString();
             
             
         }
@@ -134,8 +183,6 @@ public class RunnerTest
         }
     }
 
-    
-
     /**
      * testDryRun
      * <p>
@@ -145,13 +192,169 @@ public class RunnerTest
     public void testDryRun() throws Exception
     {
         myClassUnderTest.setDryRun( true );
-//        myClassUnderTest.setMove( false );
-//        myClassUnderTest.setOrigDir( orig.toString() );
-//        myClassUnderTest.setBackupDir( backup.toString() );
-//        myClassUnderTest.setEvacuateDir( evacuate.toString() );
-        
         myClassUnderTest.run();
+        Assert.assertEquals( 0, myEvacuateDir.toFile().listFiles().length );
+    }
+
+    /**
+     * testDryRun
+     * <p>
+     * @throws Exception
+     */
+    @Test
+    public void testMove() throws Exception
+    {
+        myClassUnderTest.setMove( true );
+        myClassUnderTest.run();
+        Assert.assertTrue( "Nothing moved!!!", myEvacuateDir.toFile().listFiles().length > 0);
+        
+        Assert.assertTrue( "Src still exists", Files.notExists( Paths.get( "testsandbox", "backup", "sub1", "fileSub1.txt" ) ) );
+        Assert.assertTrue( "Dst not exists", Files.exists( Paths.get( "testsandbox", "evacuate", "sub1", "fileSub1.txt" ) ) );
+        Assert.assertTrue( "Src still exists", Files.notExists( Paths.get( "testsandbox", "backup", "file1.txt" ) ) );
+        Assert.assertTrue( "Dst not exists", Files.exists( Paths.get( "testsandbox", "evacuate", "file1.txt" ) ) );
+        Assert.assertTrue( "Src still exists", Files.notExists( Paths.get( "testsandbox", "backup", "sub2" ) ) );
+        Assert.assertTrue( "Dst not exists", Files.exists( Paths.get( "testsandbox", "evacuate", "sub2" ) ) );
+        // one check on a implicitely moved file:
+        Assert.assertTrue( "Implicitely moved file not exists", Files.exists( Paths.get( "testsandbox", 
+                                                                                         "evacuate", 
+                                                                                         "sub2", 
+                                                                                         "sub2sub1", 
+                                                                                         "fileSub2Sub1.txt" ) ) );
         
     }
+
+//    /**
+//     * testDryRun
+//     * <p>
+//     * @throws Exception
+//     */
+//    @Test
+//    public void testMoveOtherPartition() throws Exception
+//    {
+//        myClassUnderTest.setMove( true );
+//        myEvacuateDir = Paths.get( "T:/" );
+//        Deencapsulation.setField( myClassUnderTest, "myEvacuateDirStr", myEvacuateDir.toString() );
+//        
+//        try
+//        {
+//            myClassUnderTest.run();
+//            Assert.assertTrue( "Nothing moved!!!", myEvacuateDir.toFile().listFiles().length > 0);
+//            
+//            Assert.assertTrue( "Src still exists", Files.notExists( Paths.get( "testsandbox", "backup", "sub1", "fileSub1.txt" ) ) );
+//            Assert.assertTrue( "Dst not exists", Files.exists( Paths.get( "T:", "sub1", "fileSub1.txt" ) ) );
+//            Assert.assertTrue( "Src still exists", Files.notExists( Paths.get( "testsandbox", "backup", "file1.txt" ) ) );
+//            Assert.assertTrue( "Dst not exists", Files.exists( Paths.get( "T:", "file1.txt" ) ) );
+//            Assert.assertTrue( "Src still exists", Files.notExists( Paths.get( "testsandbox", "backup", "sub2" ) ) );
+//            Assert.assertTrue( "Dst not exists", Files.exists( Paths.get( "T:", "sub2" ) ) );
+//            // one check on a implicitely moved file:
+//            Assert.assertTrue( "Implicitely moved file not exists", Files.exists( Paths.get( "T:", 
+//                                                                                             "sub2", 
+//                                                                                             "sub2sub1", 
+//                                                                                             "fileSub2Sub1.txt" ) ) );
+//        }
+//        finally
+//        {
+//            Helper.deleteDirRecursive( myEvacuateDir );
+//        }
+//        
+//    }
+
+    /**
+     * testDryRun
+     * <p>
+     * @throws Exception
+     */
+    @Test
+    public void testCopy1() throws Exception
+    {
+        myClassUnderTest.run();
+        Assert.assertTrue( "Nothing copied!!!", myEvacuateDir.toFile().listFiles().length > 0);
+        
+        Assert.assertTrue( "Src deleted", Files.exists( Paths.get( "testsandbox", "backup", "sub1", "fileSub1.txt" ) ) );
+        Assert.assertTrue( "Dst not exists", Files.exists( Paths.get( "testsandbox", "evacuate", "sub1", "fileSub1.txt" ) ) );
+        Assert.assertTrue( "Src deleted", Files.exists( Paths.get( "testsandbox", "backup", "file1.txt" ) ) );
+        Assert.assertTrue( "Dst not exists", Files.exists( Paths.get( "testsandbox", "evacuate", "file1.txt" ) ) );
+        Assert.assertTrue( "Src deleted", Files.exists( Paths.get( "testsandbox", "backup", "sub2" ) ) );
+        Assert.assertTrue( "Dst not exists", Files.exists( Paths.get( "testsandbox", "evacuate", "sub2" ) ) );
+        // one check on a implicitely moved file:
+        Assert.assertTrue( "Implicitely moved file not exists", Files.exists( Paths.get( "testsandbox", 
+                                                                                         "evacuate", 
+                                                                                         "sub2", 
+                                                                                         "sub2sub1", 
+                                                                                         "fileSub2Sub1.txt" ) ) );
+    }
+    
+    /**
+     * testing the backup chain
+     * <p>
+     * @throws Exception
+     */
+    @Test
+    public void testCopy12() throws Exception
+    {
+
+        myLog.debug( ">>>>>>>>>>>>>>>> starting" );
+
+        try
+        {
+            myClassUnderTest.run();
+            myClassUnderTest.run();
+            myClassUnderTest.run();
+            myClassUnderTest.run();
+            myClassUnderTest.run();
+            myClassUnderTest.run();
+            myClassUnderTest.run();
+            myClassUnderTest.run();
+            myClassUnderTest.run();
+            myClassUnderTest.run();
+            myClassUnderTest.run();
+            myClassUnderTest.run();
+            
+            assertBackupChain( myOrigFile1, 10 );
+            assertBackupChain( myOrigDirSub2, 10 );
+            
+            myLog.debug( ">>>>>>>>>>>>>>>> finished successfully" );
+        }
+        catch ( AssertionError e )
+        {
+            myLog.warn( "<<<<<<<<<<<<<<<< ERROR occured", e );
+            // rethrow since it is an already thrown assertion
+            throw e;
+        }
+        catch ( Throwable e )
+        {
+            myLog.warn( "<<<<<<<<<<<<<<<< ERROR occured", e );
+            Assert.fail( "Throwable caught: "
+                         + e );
+        }
+    }
+    
+
+
+    /**
+     * assertBackupChain
+     * <p>
+     * @param aOrigFile1
+     * @param aI
+     */
+    private void assertBackupChain( Path aPath, int aTimes )
+    {
+        Path subDirToBackupRoot = myOrigDir.relativize( aPath );
+        Path dst = myEvacuateDir.resolve( subDirToBackupRoot );
+        Assert.assertTrue( "Dst '" + dst.toString() + "' not exists", Files.exists( dst ) );
+        
+        for ( int i = 1; i < aTimes; i++ )
+        {
+            Path chained = Helper.appendNumberSuffix( dst, i ); 
+            Assert.assertTrue( "chained '" + chained.toString() + "' not exists", Files.exists( chained ) );
+        }
+        
+        Path chained = Helper.appendNumberSuffix( dst, aTimes ); 
+        Assert.assertTrue( "chained '" + chained.toString() + "' should not exist", Files.notExists( chained ) );
+        
+    }
+    
+    
+
 
 }
