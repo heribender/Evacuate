@@ -21,7 +21,13 @@ package ch.bender.evacuate;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -43,6 +49,7 @@ public class EvacuateMain
     private String myOrigDir;
     private String myBackupDir;
     private String myEvacuateDir;
+    private List<String> myExcludePatterns = new ArrayList<>();
 
     private Runner myRunner = new Runner();
 
@@ -105,6 +112,20 @@ public class EvacuateMain
                 index++;
                 continue;
             }
+            
+            if ( "-e".equals( arg ) || "--exclude".equals( arg ) )
+            {
+                index++;
+                i++;
+                if ( i >= myArgs.length )
+                {
+                    throw new IllegalArgumentException( "File URL expected after option " + arg );
+                }
+                
+                myExcludePatterns = initExcludePattersFromFile( myArgs[i] );
+                index++;
+                continue;
+            }
         }
 
         int needed = index + 3;
@@ -127,7 +148,9 @@ public class EvacuateMain
                 + "\n    Backup directory    : " + myBackupDir
                 + "\n    Evacuation directory: " + myEvacuateDir
                 + "\n    Dry-Run             : " + myDryRun
-                + "\n    Move                : " + myMove );
+                + "\n    Move                : " + myMove
+                + "\n    ExcludePatterns     : " + myExcludePatterns
+                );
         
         File origDir = new File( myOrigDir );
         if ( !origDir.exists() )
@@ -183,6 +206,36 @@ public class EvacuateMain
     }
 
     /**
+     * initExcludePattersFromFile
+     * <p>
+     * @param aFilename
+     * @return
+     */
+    private List<String> initExcludePattersFromFile( String aFilename )
+    {
+        List<String> result = new ArrayList<>();
+        
+        Path path = Paths.get( aFilename );
+        
+        if ( Files.notExists( path ) )
+        {
+            throw new IllegalArgumentException( "File " + aFilename + " does not exist" );
+        }
+        
+        try
+        {
+            result = FileUtils.readLines( path.toFile() );
+        }
+        catch ( IOException e )
+        {
+            throw new IllegalArgumentException( "File " + aFilename + " cannot be read", e );
+        }
+        
+        return result;
+        
+    }
+
+    /**
      * usage
      * <p>
      */
@@ -199,8 +252,8 @@ public class EvacuateMain
         sb.append( "\n    Options:" );
         sb.append( "\n        -d, --dry-run: no file operation is done, files to evacuate are listed on console" );
         sb.append( "\n        -m, --move   : evacuated files are moved from backup to evacuate dir instead of copy" );
+        sb.append( "\n        -e, --exclude: exclude file. Option must be followed by valid file URL" );
         sb.append( "\n\n" );
-        
         
         myLog.info( sb.toString() );
         
@@ -218,6 +271,7 @@ public class EvacuateMain
         myRunner.setEvacuateDir( myEvacuateDir );
         myRunner.setDryRun( myDryRun );
         myRunner.setMove( myMove );
+        myRunner.setExcludePatterns( myExcludePatterns );
         
         myRunner.run();
         

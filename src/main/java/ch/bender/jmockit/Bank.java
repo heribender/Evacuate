@@ -53,7 +53,8 @@ public class Bank
         // goes here
 
         // call to static method
-        String conStr = DBManager2.getConnectionString();
+//        String conStr = DBManager2.getConnectionString();
+        String conStr = "";
 
         // If the connection String
         // is anything other than

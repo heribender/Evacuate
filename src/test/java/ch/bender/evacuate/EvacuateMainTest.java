@@ -30,6 +30,7 @@ import mockit.Deencapsulation;
 import mockit.Injectable;
 import mockit.Tested;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.After;
@@ -45,13 +46,21 @@ import org.junit.Test;
 public class EvacuateMainTest
 {
     
+    /**  */
+    private static final String EXCLUDE_FILE_NAME = "exclude.txt";
+
     /** logger for this class */
     private Logger myLog = LogManager.getLogger( EvacuateMainTest.class );
+    
+    private Path myExcludeFile;        
+    private static final String EXCLUDE_VALUE = "toBeExcluded";
+
     
     @Tested
     EvacuateMain                      myClassUnderTest;
     @Injectable
     String[] myArgs = new String[0];
+    
 
     
     /**
@@ -125,6 +134,10 @@ public class EvacuateMainTest
             FSOBJECTS.NOT1.setFsObject( Paths.get( Testconstants.ROOT_DIR.toString(), "notExisting1" ) );
             FSOBJECTS.NOT2.setFsObject( Paths.get( Testconstants.ROOT_DIR.toString(), "notExisting2" ) );
             FSOBJECTS.NOT3.setFsObject( Paths.get( Testconstants.ROOT_DIR.toString(), "notExisting3" ) );
+            
+            Files.deleteIfExists( Paths.get( EXCLUDE_FILE_NAME ) );
+            myExcludeFile = Testconstants.createNewFile( Paths.get( "." ), EXCLUDE_FILE_NAME );
+            FileUtils.writeLines( myExcludeFile.toFile(), Arrays.asList( new String[] { EXCLUDE_VALUE } ) );
         }
         catch ( Throwable t )
         {
@@ -151,6 +164,7 @@ public class EvacuateMainTest
                 Helper.deleteDirRecursive( Testconstants.ROOT_DIR );
             }
             
+            Files.deleteIfExists( myExcludeFile );
             
             myLog.debug( "leaving..." );
         }
@@ -209,9 +223,32 @@ public class EvacuateMainTest
         myClassUnderTest.init();
     }
 
+    /**
+     * Test method for {@link ch.bender.evacuate.EvacuateMain#init()}.
+     */
+    @Test( expected=IllegalArgumentException.class )
+    public void testInitExcludeNoFileArgument()
+    {
+        myLog.debug( "exclude option but no file argument" );
+        String[] args = makeCmdLineArgs( "-d", "bli", "-e" );
+        Deencapsulation.setField( myClassUnderTest, args );
+        myClassUnderTest.init();
+    }
+
+    /**
+     * Test method for {@link ch.bender.evacuate.EvacuateMain#init()}.
+     */
+    @Test( expected=IllegalArgumentException.class )
+    public void testInitExcludeWrongFileArgument()
+    {
+        myLog.debug( "exclude option but no file argument" );
+        String[] args = makeCmdLineArgs( "--exclude", "bli", "-d", "bli" );
+        Deencapsulation.setField( myClassUnderTest, args );
+        myClassUnderTest.init();
+    }
+
     boolean myRunnerCalled;
 
-    
     class RunnerMock extends Runner
     {
         /**
@@ -238,14 +275,18 @@ public class EvacuateMainTest
         String[] oneOptionsD = makeCmdLineArgs( "-d" );
         String[] oneOptionsM = makeCmdLineArgs( "-m" );
         String[] twoOptions = makeCmdLineArgs( "--move", "--dry-run" );
+        String[] twoOptionsExcludeFile = makeCmdLineArgs( "-d", "-e", EXCLUDE_FILE_NAME );
+        String[] threeOptions =  makeCmdLineArgs( "--exclude", EXCLUDE_FILE_NAME, "--move", "--dry-run" );
         
         List<String[]> optionSets = new ArrayList<>();
         optionSets.add( zeroOptions );
         optionSets.add( oneOptionsD );
         optionSets.add( oneOptionsM );
         optionSets.add( twoOptions );
+        optionSets.add( twoOptionsExcludeFile );
+        optionSets.add( threeOptions );
 
-//        doLoopStep( twoOptions, 
+//        doLoopStep( threeOptions, 
 //                    FSOBJECTS.DIR1, 
 //                    FSOBJECTS.DIR2,
 //                    FSOBJECTS.DIR3 );
@@ -274,11 +315,13 @@ public class EvacuateMainTest
                              FSOBJECTS aBackup,
                              FSOBJECTS aEvacuate ) throws Exception
     {
+        
         String[] args = new String[ aOptions.length + 3 ];
         
         boolean expectedDryRun = false;
         boolean expectedMove = false;
         boolean expectedSuccess = false;
+        List<String> expectedExcludes = null;
         
         // prepare options in command line:
         for ( int i = 0; i < aOptions.length; i++ )
@@ -290,10 +333,25 @@ public class EvacuateMainTest
             
             if ( !expectedMove )
             {
-                expectedMove   = ( "-m".equals( aOptions[i] ) || "--move".equals( aOptions[i] ) );
+                expectedMove  = ( "-m".equals( aOptions[i] ) || "--move".equals( aOptions[i] ) );
+            }
+            
+            if ( expectedExcludes == null )
+            {
+                if ( "-e".equals( aOptions[i] ) || "--exclude".equals( aOptions[i] ) )
+                {
+                    args[i] = aOptions[i];
+                    i++;
+                    expectedExcludes = Arrays.asList( new String[] { EXCLUDE_VALUE } );
+                }
             }
             
             args[i] = aOptions[i];
+        }
+        
+        if ( expectedExcludes == null )
+        {
+            expectedExcludes = Arrays.asList( new String[] {} );
         }
         
         // prepare file system objects in command line:
@@ -368,17 +426,23 @@ public class EvacuateMainTest
             myClassUnderTest.run();
             
             Assert.assertTrue( myRunnerCalled );
-            Assert.assertEquals( "Move",     expectedMove,                       myRunner.isMove() );
-            Assert.assertEquals( "DryRun",   expectedDryRun,                     myRunner.isDryRun() );
-            Assert.assertEquals( "Orig",     aOrig.getFsObject().toString(),     myRunner.getOrigDir() );
-            Assert.assertEquals( "Backup",   aBackup.getFsObject().toString(),   myRunner.getBackupDir() );
-            Assert.assertEquals( "Evacuate", aEvacuate.getFsObject().toString(), myRunner.getEvacuateDir() );
+            Assert.assertEquals( "Move",       expectedMove,                       myRunner.isMove() );
+            Assert.assertEquals( "DryRun",     expectedDryRun,                     myRunner.isDryRun() );
+            Assert.assertEquals( "Orig",       aOrig.getFsObject().toString(),     myRunner.getOrigDir() );
+            Assert.assertEquals( "Backup",     aBackup.getFsObject().toString(),   myRunner.getBackupDir() );
+            Assert.assertEquals( "Evacuate",   aEvacuate.getFsObject().toString(), myRunner.getEvacuateDir() );
+            Assert.assertEquals( "Excludes #", expectedExcludes.size(),            myRunner.getExcludePatterns().size() );
+            if ( expectedExcludes.size() == 1 )
+            {
+                Assert.assertEquals( "Excludes", EXCLUDE_VALUE, myRunner.getExcludePatterns().get(  0  ) );
+            }
+            
         }
         catch ( IllegalArgumentException e )
         {
             if ( expectedSuccess )
             {
-                Assert.fail( "No Exception expected!!" );
+                Assert.fail( "No Exception expected!! Exception: " + e.getMessage() );
             }
             
             myLog.debug( "Expected exception received: " + e.getMessage() );
