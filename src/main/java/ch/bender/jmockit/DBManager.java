@@ -16,55 +16,24 @@
 package ch.bender.jmockit;
 
 /**
- * TODO Hey Heri, comment this type please !
+ * TODO
  *
- * @author Heri
+ * @version 1.0 (26.02.2015)
+ * @author Bender (ERGONOMICS)
  */
-public class Bank
+public class DBManager
 {
-    static int balanceAmount;
-    DBManager dbManager;
-
-    // Static block begins
-    static
+    /**
+     * @param accountId
+     * @return
+     */
+    public String retrieveAccountHolderName( int accountId )
     {
-        updateBalance( 100);
-    }
+        String accountHolderName = null;
 
-    public static void updateBalance( float balance )
-    {
-        balanceAmount += balance;
-    }
-
-    public String processAccount( int accountID )
-    {
-        // Some other code goes here
-
-        String accountHolderName = dbManager.retrieveAccountHolderName( accountID);
-
-        // some more processing code
+        // connect to db
+        // retrieve the Account Holder Name
 
         return accountHolderName;
-    }
-
-    public String makeConnection()
-    {
-        // some connection related code
-        // goes here
-
-        // call to static method
-        String conStr = DBManager2.getConnectionString();
-
-        // If the connection String
-        // is anything other than
-        // ORIGINAL return FAIL
-        if ( conStr.equals( "ORIGINAL") )
-        {
-            return "SUCCESS";
-        }
-        else
-        {
-            return "FAIL";
-        }
     }
 }

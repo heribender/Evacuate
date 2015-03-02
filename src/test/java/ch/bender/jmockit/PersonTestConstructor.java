@@ -15,38 +15,64 @@
 
 package ch.bender.jmockit;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import mockit.Mock;
 import mockit.MockUp;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.Test;
-
 
 /**
  * TODO Hey Heri, comment this type please !
  *
  * @author Heri
  */
-public class BankTest
+public class PersonTestConstructor
 {
+    
+    /** logger for this class */
+    private Logger myLog = LogManager.getLogger( PersonTestConstructor.class);
 
-    /**
-     * 
-     */
     @Test
-    public void testBankStaticBlock()
+    public void testGetName()
     {
-
-        new MockUp<Bank>()
+        new MockUp<Person>()
         {
             @Mock
-            public void $clinit()
+            public void $init()
             {
-                Bank.updateBalance( 500);
+                // Dont assign name variable at all
+                // Leave it null
             }
+
         };
 
-        assertEquals( "The balance amount is 500", 500, Bank.balanceAmount);
+        Person p = new Person();
+        String name = p.getName();
 
+        assertNull( "Name of person is null", name );
     }
+    
+    @Test
+    public void testGetName2()
+    {
+        new MockUp<Person>()
+        {
+            @Mock
+            public void $init( String name )
+            {
+                // Dont assign name variable at all
+                // Leave it null
+            }
+
+        };
+
+        Person p = new Person( "AbhiJMockit" );
+        String name = p.getName();
+        myLog.debug( "name: " + name );
+        System.out.println( name );
+        assertNull( "Name of person is null", name );
+    }
+
 }
