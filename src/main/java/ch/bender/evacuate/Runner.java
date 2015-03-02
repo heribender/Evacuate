@@ -21,9 +21,11 @@ package ch.bender.evacuate;
 
 import java.io.IOException;
 import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.FileSystem;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
@@ -37,8 +39,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -69,6 +73,12 @@ public class Runner
     private Map<Path,Path> myEvacuateCandidates;
     private Map<Path,Throwable> myFailedChainPreparations;
     private Collection<CompletableFuture<?>> myFutures;
+    private int myExclusionDirCount;
+    private int myEvacuationDirCount;
+    private int myExclusionFileCount;
+    private int myEvacuationFileCount;
+
+    private List<PathMatcher> myExclusionMatchers;
 
     /**
      * run
@@ -78,10 +88,15 @@ public class Runner
     public void run() throws Exception
     {
         checkDirectories();
+        initExcludeMatchers();
         
         myEvacuateCandidates = new TreeMap<>();
         myFailedChainPreparations = Collections.synchronizedMap( new HashMap<>() );
         myFutures = new HashSet<>();
+        myExclusionDirCount = 0;
+        myEvacuationDirCount = 0;
+        myExclusionFileCount = 0;
+        myEvacuationFileCount = 0;
         
         Files.walkFileTree( myBackupDir, new SimpleFileVisitor<Path>()
         {
@@ -209,6 +224,26 @@ public class Runner
             }
         }
         
+        myLog.info( "\nSuccessfully terminated."
+                + "\n             Evacuated  Skipped"
+                + "\n    Files  : " + StringUtils.leftPad( "" + myEvacuationDirCount, 9 ) 
+                                    +  StringUtils.leftPad( "" + myExclusionDirCount, 9 )
+                + "\n    Folders: " + StringUtils.leftPad( "" + myEvacuationFileCount, 9 ) 
+                                    +  StringUtils.leftPad( "" + myExclusionFileCount, 9 )
+                );
+    }
+
+    /**
+     * initExcludeMatchers
+     * <p>
+     */
+    private void initExcludeMatchers()
+    {
+        FileSystem fs = myBackupDir.getFileSystem();
+        myExclusionMatchers = myExcludePatterns.stream()
+            .filter( s -> ( s != null && s.length() > 0 ) )
+            .map( s -> fs.getPathMatcher( "glob:" + s ) )
+            .collect( Collectors.toList() );
     }
 
     /**
@@ -255,6 +290,22 @@ public class Runner
      */
     private FileVisitResult visit( Path aPath )
     {
+        if ( isExcluded( aPath ) )
+        {
+            myLog.debug( "Skip because on exclude list: " + aPath.toString() );
+            
+            if ( Files.isDirectory( aPath ) )
+            {
+                myExclusionDirCount++;
+            }
+            else
+            {
+                myExclusionFileCount++;
+            }
+            
+            return FileVisitResult.SKIP_SUBTREE;
+        }
+        
         Path subDirToBackupRoot = myBackupDir.relativize( aPath );
         Path origPendant = myOrigDir.resolve( subDirToBackupRoot );
         
@@ -264,14 +315,35 @@ public class Runner
             
             if ( Files.isDirectory( aPath ) )
             {
+                myEvacuationDirCount++;
                 return FileVisitResult.SKIP_SUBTREE;
             }
             
             // else is file:
+            myEvacuationFileCount++;
             return FileVisitResult.CONTINUE;
         }
 
         return FileVisitResult.CONTINUE;
+    }
+
+    /**
+     * isExcluded
+     * <p>
+     * @param aPath
+     * @return
+     */
+    private boolean isExcluded( Path aPath )
+    {
+        for ( PathMatcher matcher : myExclusionMatchers )
+        {
+            if ( matcher.matches( aPath ) )
+            {
+                return true;
+            }
+        }
+        
+        return false;
     }
 
     /**

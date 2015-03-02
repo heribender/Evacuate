@@ -22,6 +22,7 @@ package ch.bender.evacuate;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 
 import mockit.Injectable;
 import mockit.Tested;
@@ -220,6 +221,28 @@ public class RunnerTest
                                                                                          "sub2", 
                                                                                          "sub2sub1", 
                                                                                          "fileSub2Sub1.txt" ) ) );
+        
+    }
+
+    /**
+     * testDryRun
+     * <p>
+     * @throws Exception
+     */
+    @Test
+    public void testExclude() throws Exception
+    {
+        myClassUnderTest.setMove( true );
+        myClassUnderTest.setExcludePatterns( Arrays.asList( new String[] { "**/FileSub?.t*", "**/sub2" } ) );
+        myClassUnderTest.run();
+        Assert.assertTrue( "Nothing moved!!!", myEvacuateDir.toFile().listFiles().length > 0);
+        
+        Assert.assertTrue( "Not excluded", Files.exists( Paths.get( "testsandbox", "backup", "sub1", "fileSub1.txt" ) ) );
+        Assert.assertTrue( "Not excluded", Files.notExists( Paths.get( "testsandbox", "evacuate", "sub1", "fileSub1.txt" ) ) );
+        Assert.assertTrue( "Src still exists", Files.notExists( Paths.get( "testsandbox", "backup", "file1.txt" ) ) );
+        Assert.assertTrue( "Dst not exists", Files.exists( Paths.get( "testsandbox", "evacuate", "file1.txt" ) ) );
+        Assert.assertTrue( "Not excluded", Files.exists( Paths.get( "testsandbox", "backup", "sub2" ) ) );
+        Assert.assertTrue( "Not excluded", Files.notExists( Paths.get( "testsandbox", "evacuate", "sub2" ) ) );
         
     }
 
