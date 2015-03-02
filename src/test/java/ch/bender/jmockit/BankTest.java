@@ -21,6 +21,7 @@ import mockit.MockUp;
 
 import org.junit.Test;
 
+
 /**
  * TODO Hey Heri, comment this type please !
  *
@@ -29,21 +30,23 @@ import org.junit.Test;
 public class BankTest
 {
 
+    /**
+     * 
+     */
     @Test
     public void testBankStaticBlock()
     {
 
         new MockUp<Bank>()
         {
-            @SuppressWarnings("unused")
             @Mock
             public void $clinit()
             {
-                Bank.updateBalance( 500 );
+                Bank.updateBalance( 500);
             }
         };
 
-        assertEquals( "The balance amount is 500", 500, Bank.balanceAmount );
+        assertEquals( "The balance amount is 500", 500, Bank.balanceAmount);
 
     }
 }
