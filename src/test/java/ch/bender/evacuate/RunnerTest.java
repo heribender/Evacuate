@@ -366,17 +366,19 @@ public class RunnerTest
 
         try
         {
-            myClassUnderTest.setDryRun( true );
+            myClassUnderTest.setDryRun( false );
             myClassUnderTest.setMove( false );
+            
 //            myClassUnderTest.setOrigDir( "C:/Users" );
 //            myClassUnderTest.setBackupDir( "S:/Users" );
 //            myClassUnderTest.setEvacuateDir( "T:/c_" );
-
-            myClassUnderTest.setOrigDir( "F:/" );
-            myClassUnderTest.setBackupDir( "R:/" );
-            myClassUnderTest.setEvacuateDir( "T:/f_" );
-
 //            myClassUnderTest.run();
+
+//            myClassUnderTest.setOrigDir( "F:/" );
+//            myClassUnderTest.setBackupDir( "R:/" );
+//            myClassUnderTest.setEvacuateDir( "T:/f_" );
+//            myClassUnderTest.run();
+
             
         }
         finally

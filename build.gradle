@@ -1,10 +1,10 @@
 apply plugin: 'java'
-apply plugin: 'maven'
+apply plugin: 'application'
 
 group = 'evacuate'
 version = '1.0'
 
-description = """"""
+mainClassName = "ch.bender.evacuate.EvacuateMain"
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
@@ -16,17 +16,20 @@ ext
 }
 
 
-repositories {
-        
-     maven { url "http://nexus.magnolia-cms.com/content/groups/public/" }
-     maven { url "http://repo.maven.apache.org/maven2" }
+repositories 
+{
+    mavenCentral()
+	
+//     maven { url "http://nexus.magnolia-cms.com/content/groups/public/" }
+//     maven { url "http://repo.maven.apache.org/maven2" }
 }
+
 dependencies {
     compile group: 'com.google.guava', name: 'guava', version:'18.0'
     compile group: 'org.apache.commons', name: 'commons-lang3', version:'3.3.2'
     compile group: 'commons-io', name: 'commons-io', version:'2.4'
-    compile group: 'org.apache.logging.log4j', name: 'log4j-api', version:'2.1'
-    compile group: 'org.apache.logging.log4j', name: 'log4j-core', version:'2.1'
-    testCompile group: 'org.jmockit', name: 'jmockit', version:'1.15'
+    compile "org.apache.logging.log4j:log4j-api:${loggerVersion}"
+    compile "org.apache.logging.log4j:log4j-core:${loggerVersion}"
+    testCompile "org.jmockit:jmockit:${jmockitVersion}"
     testCompile group: 'junit', name: 'junit', version:'4.12'
 }
