@@ -374,46 +374,5 @@ public class RunnerTest
         Assert.assertTrue( "chained '" + chained.toString() + "' should not exist", Files.notExists( chained ) );
         
     }
-    
-    /**
-     * Tests 
-     * <p>
-     * 
-     * @throws Throwable on any problem
-     */
-    @Test
-    public void test() throws Throwable
-    {
-
-        myLog.debug( ">>>>>>>>>>>>>>>> starting" );
-
-        try
-        {
-            myClassUnderTest.setDryRun( false );
-            myClassUnderTest.setMove( false );
-            
-//            myClassUnderTest.setOrigDir( "C:/Users" );
-//            myClassUnderTest.setBackupDir( "S:/Users" );
-//            myClassUnderTest.setEvacuateDir( "T:/c_" );
-//            myClassUnderTest.run();
-
-//            myClassUnderTest.setOrigDir( "F:/" );
-//            myClassUnderTest.setBackupDir( "R:/" );
-//            myClassUnderTest.setEvacuateDir( "T:/f_" );
-//            myClassUnderTest.run();
-
-            
-        }
-        finally
-        {
-            myLog.debug( ">>>>>>>>>>>>>>>> finished" );
-        }
-    }
-
-    
-
-
-    
-
 
 }
