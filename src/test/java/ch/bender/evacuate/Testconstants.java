@@ -33,7 +33,7 @@ import org.apache.commons.io.FileUtils;
  */
 public final class Testconstants
 {
-    public static final String TEST_SANDBOX_DIR_STR = "testsandbox";
+    public static final String TEST_SANDBOX_DIR_STR = "./testsandbox";
     public static Path ROOT_DIR = Paths.get( TEST_SANDBOX_DIR_STR );
 
 

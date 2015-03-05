@@ -9,7 +9,12 @@ Usage
 -----
 Usage:
 
-    evacuate.bat [options] OrigDir BackupDir EvacuateDir
+    bin\main.bat [options] OrigDir BackupDir EvacuateDir
+	
+	or
+	
+    bin/main [options] OrigDir BackupDir EvacuateDir
+	
 
     where:
         OrigDir    : original directory
@@ -21,10 +26,8 @@ Usage:
         -e, --exclude: exclude file. Option must be followed by valid file URL (see below)
 
 
-Needs Java8 (jre) to run	
+Needs JAVA_HOME environment variable set to a Java8 (jre) installation. 
 	
-TODO: build distribution zip with starter batch!
-
 
 
 Exclude File 
